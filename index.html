@@ -341,13 +341,13 @@ function fitW(o,mode,size,veh){const g=new T.Group();g.add(o);const V=()=>new T.
 let s2=bbox(g).getSize(V()),m=Math.max(s2.x,s2.z);if(m>4.6)o.scale.multiplyScalar(4.6/m);s2=bbox(g).getSize(V());if(s2.y>4)o.scale.multiplyScalar(4/s2.y);
 if(veh){s2=bbox(g).getSize(V());if(s2.x>s2.z)o.rotation.y=Math.PI/2}
 o.position.set(0,0,0);const b=bbox(g),c=b.getCenter(V());o.position.set(-c.x,-b.min.y,-c.z);return g}
-function wDisp(o){o.traverse(m=>{if(m.geometry)m.geometry.dispose();(m.material?(Array.isArray(m.material)?m.material:[m.material]):[]).forEach(mt=>{for(const n in mt){const v=mt[n];if(v&&v.isTexture)v.dispose()}mt.dispose()})})}
+function wDisp(o){if(!o||!o.traverse)return;const gs=new Set(),ms=new Set(),ts=new Set();o.traverse(m=>{const g=m.geometry;if(g&&!gs.has(g)){gs.add(g);if(g.attributes)for(const k of Object.keys(g.attributes))if(!g.attributes[k])delete g.attributes[k];if(typeof g.dispose==='function')g.dispose()}const mats=m.material?(Array.isArray(m.material)?m.material:[m.material]):[];mats.forEach(mt=>{if(!mt||ms.has(mt))return;ms.add(mt);for(const n in mt){const v=mt[n];if(v&&v.isTexture&&!ts.has(v)){ts.add(v);if(typeof v.dispose==='function')v.dispose()}}if(typeof mt.dispose==='function')mt.dispose()})})}
 // toglie dal modello 3D le parti che sembrano un basamento (piatte, larghe, in fondo al modello)
 function cutBase(o){o.updateMatrixWorld(true);const all=new T.Box3().setFromObject(o),H=all.max.y-all.min.y,W=Math.max(all.max.x-all.min.x,all.max.z-all.min.z),rm=[];let n=0;
 o.traverse(m=>{if(!m.isMesh)return;n++;const b=new T.Box3().setFromObject(m);if(b.max.y<=all.min.y+.16*H&&Math.max(b.max.x-b.min.x,b.max.z-b.min.z)>=.5*W)rm.push(m)});
 if(rm.length&&rm.length<n)rm.forEach(m=>m.parent&&m.parent.remove(m))}
 function wLoad(sl){const gen=WR.gen;sl.st=1;sl.t0=performance.now();loadGLB(sl.k,o=>{if(gen!==WR.gen||!WR.on){wDisp(o);sl.st=0;return}o.traverse(m=>{if(m.isMesh||m.isSkinnedMesh)m.frustumCulled=false});if(sl.k==='leatherface')cutBase(o);{const f=fitW(o,sl.mode,sl.size,sl.veh);f.scale.setScalar(WSC.v);sl.hd.add(f)}sl.st=2;WR.seen.add(sl.k);up({hn:WR.seen.size})})}
-function wUnload(sl){sl.hd.children.slice().forEach(c=>{sl.hd.remove(c);wDisp(c)});sl.st=0}
+function wUnload(sl){if(!sl||!sl.hd)return;const old=sl.hd.children.slice();sl.st=0;old.forEach(c=>sl.hd.remove(c));old.forEach(c=>wDisp(c))}
 // carica i modelli vicini a te e scarica quelli lontani (la galleria e' lunga)
 function wTick(dt){WR.slots.forEach(sl=>{if(sl.spin&&sl.st===2)sl.hd.rotation.y+=dt*.5});
 {const ds=WR.slots.map(sl=>[Math.hypot(sl.x-G.x,sl.z-G.z),sl]).sort((a,b)=>a[0]-b[0]);WR.slots.forEach(sl=>{sl.near=false});ds.forEach(e=>{e[1].d=e[0]});
