@@ -4,11 +4,11 @@
 <title>Cinema</title>
 <style>:root{color-scheme:dark}html,body,#root{height:100%;margin:0;background:#1a1030;overflow:hidden;font-family:system-ui,sans-serif;overscroll-behavior:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}input,textarea{-webkit-user-select:text;user-select:text}canvas{touch-action:none;display:block}#root>div>div:first-child::after{content:'';position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(0,0,0,.4) 100%)}#root>div{position:relative;width:100%;height:100%}#root>div>div:first-child{position:absolute;inset:0}</style>
 <script src="https://cdn.tailwindcss.com/3.4.17"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/DRACOLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/loaders/DRACOLoader.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/utils/SkeletonUtils.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/meshopt_decoder.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.152.2/examples/js/libs/meshopt_decoder.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/react@18.3.1/umd/react.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/react-dom@18.3.1/umd/react-dom.production.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/htm@3.1.1/dist/htm.umd.js"></script>
@@ -31,11 +31,11 @@ const STOP=new Set(['il','lo','la','le','li','i','gli','un','uno','una','di','de
 const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
 const toks=s=>norm(s).split(' ').filter(w=>w&&!STOP.has(w));
 function lev(a,b){const d=[];for(let i=0;i<=a.length;i++)d[i]=[i];for(let j=1;j<=b.length;j++)d[0][j]=j;for(let i=1;i<=a.length;i++)for(let j=1;j<=b.length;j++)d[i][j]=Math.min(d[i-1][j]+1,d[i][j-1]+1,d[i-1][j-1]+(a[i-1]===b[j-1]?0:1));return d[a.length][b.length]}
-function tex(w,h,fn){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d'),t=new T.CanvasTexture(c);t.encoding=T.sRGBEncoding;t.userData={x};t.redraw=()=>{fn(x,w,h);t.needsUpdate=true};t.redraw();return t}
+function tex(w,h,fn){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d'),t=new T.CanvasTexture(c);if(T.SRGBColorSpace)t.colorSpace=T.SRGBColorSpace;else t.encoding=T.sRGBEncoding;t.userData={x};t.redraw=()=>{fn(x,w,h);t.needsUpdate=true};t.redraw();return t}
 function engine(el,up){
 const R=new T.WebGLRenderer({antialias:true,powerPreference:'high-performance'});R.setPixelRatio(Math.min(devicePixelRatio,innerWidth<900?1.5:2));R.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();warn('Memoria grafica esaurita: ricarica la pagina')});R.setSize(el.clientWidth,el.clientHeight);el.appendChild(R.domElement);R.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();up({msg:'Memoria grafica esaurita: ricarica la pagina.'})});
 const S=new T.Scene();S.background=new T.Color(0x151a2b);
-R.outputEncoding=T.sRGBEncoding;R.toneMapping=T.ACESFilmicToneMapping;R.toneMappingExposure=1.15;
+if("outputColorSpace" in R&&T.SRGBColorSpace)R.outputColorSpace=T.SRGBColorSpace;else R.outputEncoding=T.sRGBEncoding;R.toneMapping=T.ACESFilmicToneMapping;R.toneMappingExposure=1.15;
 const cam=new T.PerspectiveCamera(70,el.clientWidth/el.clientHeight,.1,200);cam.rotation.order='YXZ';S.add(cam);const amb=new T.HemisphereLight(0xfff0dd,0x403530,.7);S.add(amb);
 const cl=new T.PointLight(0xffffff,.5,4);cam.add(cl);
 const gl=new T.GLTFLoader();if(T.DRACOLoader){const draco=new T.DRACOLoader();draco.setDecoderPath("https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/libs/draco/gltf/");gl.setDRACOLoader(draco)}if(window.MeshoptDecoder)gl.setMeshoptDecoder(window.MeshoptDecoder);
@@ -205,7 +205,7 @@ const AV={list:[],ready:false};
 const nrm=a=>{if(!a.normalized)return 1;const r=a.array||a.data.array;return r instanceof Int16Array?32767:r instanceof Uint16Array?65535:r instanceof Int8Array?127:255};
 function bx(g){g.updateMatrixWorld(true);const b=new T.Box3(),v=new T.Vector3();g.traverse(m=>{if(!m.isMesh)return;const q=m.geometry.attributes.position,k=nrm(q);for(let i=0;i<q.count;i++){v.set(q.getX(i)/k,q.getY(i)/k,q.getZ(i)/k).applyMatrix4(m.matrixWorld);b.expandByPoint(v)}});return b}
 function avThumbs(){const N=AV.list.length,Z=256,rt=new T.WebGLRenderTarget(Z,Z),sc=new T.Scene(),cm=new T.PerspectiveCamera(30,1,.1,20),cv=document.createElement('canvas');cv.width=cv.height=Z;const cx=cv.getContext('2d'),px=new Uint8Array(Z*Z*4),out=[];
-rt.texture.encoding=T.sRGBEncoding;sc.background=new T.Color(0x2a2140);sc.add(new T.HemisphereLight(0xffffff,0x888899,1.1));const dl=new T.DirectionalLight(0xffffff,.8);dl.position.set(1,2,3);sc.add(dl);cm.position.set(0,.85,4.2);cm.lookAt(0,.8,0);
+if(T.SRGBColorSpace)rt.texture.colorSpace=T.SRGBColorSpace;else rt.texture.encoding=T.sRGBEncoding;sc.background=new T.Color(0x2a2140);sc.add(new T.HemisphereLight(0xffffff,0x888899,1.1));const dl=new T.DirectionalLight(0xffffff,.8);dl.position.set(1,2,3);sc.add(dl);cm.position.set(0,.85,4.2);cm.lookAt(0,.8,0);
 let i=0;(function step(){const n=Math.min(N,i+6);for(;i<n;i++){const m=AV.list[i].clone(true);sc.add(m);R.setRenderTarget(rt);R.render(sc,cm);R.readRenderTargetPixels(rt,0,0,Z,Z,px);R.setRenderTarget(null);sc.remove(m);const id=cx.createImageData(Z,Z);for(let y=0;y<Z;y++)id.data.set(px.subarray((Z-1-y)*Z*4,(Z-y)*Z*4),y*Z*4);cx.putImageData(id,0,0);out.push(cv.toDataURL('image/jpeg',.8))}
 up({thumbs:out.slice(),anames:AV.list.map(g=>g.userData.name)});if(i<N)setTimeout(step,30);else rt.dispose()})()}
 const avCb=sc=>{sc.updateMatrixWorld(true);const A=[];sc.traverse(n=>{if(/^_100Avatars/.test(n.name))A.push(n)});
