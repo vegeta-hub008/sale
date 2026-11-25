@@ -436,10 +436,10 @@ if(x>-3.3&&x<3.4&&z>-19.6&&z<-4.3)return true;
 return x>-12.6&&x<9.6&&z>-30&&z<-19.4&&CH(x,z)}
 // ---- input
 const KM={KeyW:'w',ArrowUp:'w',KeyS:'s',ArrowDown:'s',KeyA:'a',ArrowLeft:'a',KeyD:'d',ArrowRight:'d'};
-const kd=v=>e=>{if(e.target&&/^(INPUT|TEXTAREA)$/.test(e.target.tagName))return;const k=KM[e.code];if(!k)return;e.preventDefault();G.k[k]=v;up({keys:{...G.k}})};const kdn=kd(true),kup=kd(false);
-addEventListener('keydown',kdn);addEventListener('keyup',kup);
-let dr=null;const cv=R.domElement,ray=new T.Raycaster();
-cv.onpointerdown=e=>{try{if(!window.__ac)window.__ac=new(window.AudioContext||window.webkitAudioContext)();window.__ac.resume()}catch(er){}dr={x:e.clientX,y:e.clientY,m:0};cv.setPointerCapture(e.pointerId)};
+const kd=v=>e=>{if(e.target&&/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName))return;const k=KM[e.code];if(!k)return;e.preventDefault();G.k[k]=v;up({keys:{...G.k}})};const kdn=kd(true),kup=kd(false),clearKeys=()=>{G.k={w:false,a:false,s:false,d:false};up({keys:{...G.k}})};
+document.addEventListener('keydown',kdn,true);document.addEventListener('keyup',kup,true);addEventListener('blur',clearKeys);
+let dr=null;const cv=R.domElement,ray=new T.Raycaster();cv.tabIndex=0;cv.style.outline='none';
+cv.onpointerdown=e=>{try{cv.focus({preventScroll:true})}catch(er){cv.focus()}try{if(!window.__ac)window.__ac=new(window.AudioContext||window.webkitAudioContext)();window.__ac.resume()}catch(er){}dr={x:e.clientX,y:e.clientY,m:0};try{cv.setPointerCapture(e.pointerId)}catch(er){}};
 cv.onpointermove=e=>{if(!dr)return;const dx=e.clientX-dr.x,dy=e.clientY-dr.y;dr.x=e.clientX;dr.y=e.clientY;dr.m+=Math.abs(dx)+Math.abs(dy);G.yaw-=dx*.005;G.pitch=Math.max(-1.2,Math.min(1.2,G.pitch-dy*.005))};
 cv.onpointerup=e=>{if(dr&&dr.m<6&&G.in&&!G.seated){const b=cv.getBoundingClientRect();ray.setFromCamera(new T.Vector2((e.clientX-b.left)/b.width*2-1,-(e.clientY-b.top)/b.height*2+1),cam);if(G.white){const hh=ray.intersectObjects(WR.hit)[0];if(hh){const sl=hh.object.userData.sl,o=!sl.open;WR.slots.forEach(z=>{z.open=false});sl.open=o;if(o)sl.ld()}dr=null;return}const h=ray.intersectObjects(seatMeshes)[0];
 if(h){const i=h.object.userData.seat;if(!G.occ[i]){G.seated=true;G.si=i;G.sx=seats[i].x;G.sz=seats[i].z;G.sy=seats[i].y;G.playing=true;G.t0=performance.now();playMovie();rings();up({seated:true})}}}dr=null};
@@ -466,7 +466,7 @@ if(G.drink>0){G.drink-=dt;cup.position.set(-.2,-.2,-.5);cup.rotation.z=-.4}else{
 if(fr%15==0){const p=pload.find(p=>!p.done);if(p){p.done=1;p.fn()}}if(!G.in)spins.forEach(s=>s.rotation.y+=dt*.6);if(LOB&&GRD.length&&fr%10==0)grdCar(GRD.shift());if(LOB&&WTR&&!WTR.userData.sn){WTR.userData.sn=1;snapWaiter()}
 if(LOB&&!SNAPD){SNAPD=1;snapDoors()}if(G.in&&!G.white&&fr%4==0)drawScr(now);if(G.white&&WR.on){wTick(dt)}
 const inRoom=G.in&&!G.white;cam.position.set(G.x,G.y,G.z);if(inRoom)RM.g.localToWorld(cam.position);cam.rotation.set(G.pitch,G.yaw+(inRoom?RM.g.rotation.y:0),0);
-NET.tick(dt);if(inRoom&&fr%6==0)NET.occ();R.render(S,cam)}
+try{NET.tick(dt);if(inRoom&&fr%6==0)NET.occ()}catch(e){if(!window.__saleNetErr){window.__saleNetErr=1;console.error('Errore aggiornamento multiplayer:',e)}}try{R.render(S,cam)}catch(e){if(!window.__saleRenderErr){window.__saleRenderErr=1;console.error('Errore rendering 3D:',e)}}}
 raf=requestAnimationFrame(loop);
 return{select,chooseMovie,say,voice,toggleAuto,stand,exit,rename:NET.rename,joy(x,y){G.joy.x=x;G.joy.y=y},look(x,y){G.lk.x=x;G.lk.y=y},setAv:NET.setAv,wscale(v){WSC.v=v;WR.slots.forEach(sl=>sl.hd.children.forEach(c=>c.scale.setScalar(v)))},hall(){if(!G.in&&!G.seated)enterWhite()},
 matchAll(t){const ws=toks(t);if(!ws.length)return[];const key=ws.join(' ');let mc=0,L=[];FILMS.forEach((f,i)=>{const ft=toks(f[0]+' '+(f[5]||'')),hits=ws.filter(w=>ft.some(q=>q===w||(w.length>=4&&q.startsWith(w))||(w.length>=5&&q.length>=5&&lev(w,q)<=1))).length,c=hits/ws.length;if(c<.5)return;if(toks(f[0]).join(' ')===key)L.push([i,9]);else L.push([i,c])});if(!L.length)return[];mc=Math.max(...L.map(x=>x[1]));return L.filter(x=>x[1]===mc).map(x=>x[0])},
@@ -474,7 +474,7 @@ eat(){if(!sn.visible)return;G.eat=3.5;play('pop',.9,3500)},
 drink(){if(!sn.visible)return;G.drink=3;play('can',.9);setTimeout(()=>play('water',.9,2600),900)},
 cash(s,c){cashier.userData.sh.color.set(s);cashier.userData.hm.color.set(c)},
 glb(u){new T.GLTFLoader().load(u,g=>{const o=g.scene,b=new T.Box3().setFromObject(o),k=1.7/((b.max.y-b.min.y)||1);o.scale.setScalar(k);o.position.set(0,FL-b.min.y*k,CZ);if(G.glb)S.remove(G.glb);G.glb=o;cashier.visible=false;S.add(o);say("Nuovo modello caricato!")},undefined,()=>up({msg:"Errore: impossibile caricare il modello 3D."}))},
-dispose(){clearMovie();cancelAnimationFrame(raf);removeEventListener('keydown',kdn);removeEventListener('keyup',kup);removeEventListener('resize',rs);NET.close();R.dispose()}}}
+dispose(){clearMovie();cancelAnimationFrame(raf);document.removeEventListener('keydown',kdn,true);document.removeEventListener('keyup',kup,true);removeEventListener('blur',clearKeys);removeEventListener('resize',rs);NET.close();R.dispose()}}}
 // ---- UI React
 const lsGet=k=>{try{return localStorage.getItem(k)||''}catch(e){return ''}};
 const TOUCH=typeof matchMedia==='function'&&matchMedia('(pointer:coarse)').matches||navigator.maxTouchPoints>0,dz=v=>Math.abs(v)<.15?0:v;
